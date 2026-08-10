@@ -1,12 +1,21 @@
-// Member 1 owns this file.
-//
-// Goal:
-// - Receive large files without loading the complete file into RAM.
-// - Use Node.js streams.
-// - Prepare chunks for the ETL pipeline.
-//
-// Keep the public function name stable so other modules can call it.
+import fs from "fs";
+import path from "path";
+import { pipeline } from "stream/promises";
 
-export const streamUpload = async (inputStream, options = {}) => {
-  // TODO: implement streaming upload
+const uploadDirectory = path.resolve("uploads");
+
+export const streamUpload = async (inputStream, filename) => {
+  await fs.promises.mkdir(uploadDirectory, { recursive: true });
+
+  const safeFilename = `${Date.now()}-${filename}`;
+  const filePath = path.join(uploadDirectory, safeFilename);
+
+  const outputStream = fs.createWriteStream(filePath);
+
+  await pipeline(inputStream, outputStream);
+
+  return {
+    filename: safeFilename,
+    path: filePath
+  };
 };

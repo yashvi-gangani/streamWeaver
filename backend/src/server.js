@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import uploadRoutes from "./routes/upload.routes.js";
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ const io = new Server(httpServer, {
 
 app.use(cors());
 app.use(express.json());
+app.use("/api", uploadRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ message: "StreamWeaver backend is running" });

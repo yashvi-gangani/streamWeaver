@@ -4,10 +4,25 @@ import { pipeline } from "stream/promises";
 
 const uploadDirectory = path.resolve("uploads");
 
-export const streamUpload = async (inputStream, filename) => {
+export const streamUpload = async (
+  inputStream,
+  filename,
+  onProgress
+) => {
   await fs.promises.mkdir(uploadDirectory, { recursive: true });
 
-  const safeFilename = `${Date.now()}-${filename}`;
+  let bytesReceived = 0;
+
+  inputStream.on("data", (chunk) => {
+    bytesReceived += chunk.length;
+
+    if (onProgress) {
+      onProgress(bytesReceived);
+    }
+  });
+
+  const safeFilename = `${Date.now()}-${path.basename(filename)}`;
+
   const filePath = path.join(uploadDirectory, safeFilename);
 
   const outputStream = fs.createWriteStream(filePath);
@@ -16,6 +31,7 @@ export const streamUpload = async (inputStream, filename) => {
 
   return {
     filename: safeFilename,
-    path: filePath
+    path: filePath,
+    size: bytesReceived
   };
 };

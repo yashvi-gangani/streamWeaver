@@ -4,25 +4,22 @@ import path from "path";
 import crypto from "crypto";
 
 import { streamUpload } from "../services/upload/streamUpload.js";
-import {
-  createJob,
-  updateJob,
-  JOB_STATUS
-} from "../utils/jobStatus.js";
+import { emitProgress } from "../utils/progressEmitter.js";
+
+import { createJob, updateJob, JOB_STATUS } from "../utils/jobStatus.js";
 
 const router = express.Router();
 
-const ALLOWED_EXTENSIONS = new Set([
-  ".csv",
-  ".json"
-]);
+const ALLOWED_EXTENSIONS = new Set([".csv", ".json"]);
 
 const ALLOWED_MIME_TYPES = new Set([
   "text/csv",
   "application/json",
   "text/json",
-  "application/octet-stream"
+  "application/octet-stream",
 ]);
+
+const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
 router.post("/upload", async (req, res) => {
   const jobId = crypto.randomUUID();
@@ -32,24 +29,24 @@ router.post("/upload", async (req, res) => {
   try {
     const contentType = req.headers["content-type"];
 
-    if (
-      !contentType ||
-      !contentType.includes("multipart/form-data")
-    ) {
+    if (!contentType || !contentType.includes("multipart/form-data")) {
       updateJob(jobId, {
         status: JOB_STATUS.FAILED,
-        errors: ["Request must be multipart/form-data"]
+        errors: ["Request must be multipart/form-data"],
       });
 
       return res.status(400).json({
         success: false,
         jobId,
-        message: "Request must be multipart/form-data"
+        message: "Request must be multipart/form-data",
       });
     }
 
     const busboy = Busboy({
-      headers: req.headers
+      headers: req.headers,
+      limits: {
+        fileSize: MAX_FILE_SIZE,
+      },
     });
 
     let uploadPromise = null;
@@ -63,6 +60,13 @@ router.post("/upload", async (req, res) => {
 
       fileFound = true;
 
+      file.on("limit", () => {
+        updateJob(jobId, {
+          status: JOB_STATUS.FAILED,
+          errors: ["File size exceeds the maximum allowed limit"],
+        });
+      });
+
       const { filename, mimeType } = info;
 
       const extension = path.extname(filename).toLowerCase();
@@ -72,9 +76,7 @@ router.post("/upload", async (req, res) => {
 
         updateJob(jobId, {
           status: JOB_STATUS.FAILED,
-          errors: [
-            `Unsupported file type: ${extension || "unknown"}`
-          ]
+          errors: [`Unsupported file type: ${extension || "unknown"}`],
         });
 
         return;
@@ -85,9 +87,7 @@ router.post("/upload", async (req, res) => {
 
         updateJob(jobId, {
           status: JOB_STATUS.FAILED,
-          errors: [
-            `Unsupported MIME type: ${mimeType}`
-          ]
+          errors: [`Unsupported MIME type: ${mimeType}`],
         });
 
         return;
@@ -95,7 +95,7 @@ router.post("/upload", async (req, res) => {
 
       updateJob(jobId, {
         status: JOB_STATUS.UPLOADING,
-        filename
+        filename,
       });
 
       uploadPromise = streamUpload(
@@ -103,9 +103,17 @@ router.post("/upload", async (req, res) => {
         filename,
         (bytesReceived) => {
           updateJob(jobId, {
-            fileSize: bytesReceived
+            status: JOB_STATUS.UPLOADING,
+            fileSize: bytesReceived,
+            bytesReceived,
           });
-        }
+
+          emitProgress(req.app.get("io"), jobId, {
+            status: JOB_STATUS.UPLOADING,
+            bytesReceived,
+          });
+        },
+        MAX_FILE_SIZE,
       );
     });
 
@@ -114,25 +122,25 @@ router.post("/upload", async (req, res) => {
         if (!fileFound) {
           updateJob(jobId, {
             status: JOB_STATUS.FAILED,
-            errors: ["No file was uploaded"]
+            errors: ["No file was uploaded"],
           });
 
           return res.status(400).json({
             success: false,
             jobId,
-            message: "No file uploaded"
+            message: "No file uploaded",
           });
         }
 
         if (!uploadPromise) {
           const job = updateJob(jobId, {
-            status: JOB_STATUS.FAILED
+            status: JOB_STATUS.FAILED,
           });
 
           return res.status(400).json({
             success: false,
             jobId,
-            message: job?.errors?.[0] || "File validation failed"
+            message: job?.errors?.[0] || "File validation failed",
           });
         }
 
@@ -141,7 +149,7 @@ router.post("/upload", async (req, res) => {
         const updatedJob = updateJob(jobId, {
           status: JOB_STATUS.UPLOADED,
           filename: result.filename,
-          fileSize: result.size
+          fileSize: result.size,
         });
 
         return res.status(201).json({
@@ -150,22 +158,31 @@ router.post("/upload", async (req, res) => {
           jobId,
           file: {
             filename: result.filename,
-            size: result.size
+            size: result.size,
           },
-          status: updatedJob.status
+          status: updatedJob.status,
         });
       } catch (error) {
         console.error("Upload processing error:", error);
 
         updateJob(jobId, {
           status: JOB_STATUS.FAILED,
-          errors: [error.message]
+          errors: [error.message],
         });
+
+        if (error.code === "FILE_TOO_LARGE") {
+          return res.status(413).json({
+            success: false,
+            jobId,
+            message: "File size exceeds the maximum allowed limit",
+            maxFileSize: "100MB",
+          });
+        }
 
         return res.status(500).json({
           success: false,
           jobId,
-          message: "File upload failed"
+          message: "File upload failed",
         });
       }
     });
@@ -175,14 +192,14 @@ router.post("/upload", async (req, res) => {
 
       updateJob(jobId, {
         status: JOB_STATUS.FAILED,
-        errors: [error.message]
+        errors: [error.message],
       });
 
       if (!res.headersSent) {
         return res.status(500).json({
           success: false,
           jobId,
-          message: "File upload failed"
+          message: "File upload failed",
         });
       }
     });
@@ -193,13 +210,13 @@ router.post("/upload", async (req, res) => {
 
     updateJob(jobId, {
       status: JOB_STATUS.FAILED,
-      errors: [error.message]
+      errors: [error.message],
     });
 
     return res.status(500).json({
       success: false,
       jobId,
-      message: "Unexpected upload error"
+      message: "Unexpected upload error",
     });
   }
 });

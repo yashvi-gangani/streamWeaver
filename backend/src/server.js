@@ -17,6 +17,8 @@ const io = new Server(httpServer, {
   }
 });
 
+app.set("io", io);
+
 app.use(cors());
 app.use(express.json());
 app.use("/api", uploadRoutes);

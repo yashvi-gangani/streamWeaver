@@ -49,3 +49,55 @@ export const updateJob = (jobId, updates) => {
 export const getJob = (jobId) => {
   return jobs.get(jobId) || null;
 };
+
+export const updateProcessingProgress = (
+  jobId,
+  rowsProcessed,
+  rowsPerSecond,
+  percent
+) => {
+  const job = jobs.get(jobId);
+
+  if (!job) {
+    return null;
+  }
+
+  return updateJob(jobId, {
+    status: JOB_STATUS.PROCESSING,
+    rowsProcessed,
+    rowsPerSecond,
+    percent
+  });
+};
+
+export const completeJob = (
+  jobId,
+  rowsProcessed,
+  rowsPerSecond
+) => {
+  const job = jobs.get(jobId);
+
+  if (!job) {
+    return null;
+  }
+
+  return updateJob(jobId, {
+    status: JOB_STATUS.COMPLETED,
+    rowsProcessed,
+    rowsPerSecond,
+    percent: 100
+  });
+};
+
+export const failJob = (jobId, errorMessage) => {
+  const job = jobs.get(jobId);
+
+  if (!job) {
+    return null;
+  }
+
+  return updateJob(jobId, {
+    status: JOB_STATUS.FAILED,
+    errors: [errorMessage]
+  });
+};

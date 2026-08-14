@@ -147,10 +147,11 @@ router.post("/upload", async (req, res) => {
         const result = await uploadPromise;
 
         const updatedJob = updateJob(jobId, {
-          status: JOB_STATUS.UPLOADED,
-          filename: result.filename,
-          fileSize: result.size,
-        });
+  status: JOB_STATUS.UPLOADED,
+  filename: result.filename,
+  path: result.path,
+  fileSize: result.size
+});
 
         return res.status(201).json({
           success: true,

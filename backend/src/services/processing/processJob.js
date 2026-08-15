@@ -5,10 +5,12 @@ import {
   getJob,
   updateProcessingProgress,
   completeJob,
-  failJob
+  failJob,
 } from "../../utils/jobStatus.js";
 
-export const processJob = async (jobId) => {
+import { emitProgress } from "../../utils/progressEmitter.js";
+
+export const processJob = async (jobId, io) => {
   const job = getJob(jobId);
 
   if (!job) {
@@ -16,9 +18,7 @@ export const processJob = async (jobId) => {
   }
 
   if (job.status !== "processing") {
-    throw new Error(
-      `Job cannot be processed from status: ${job.status}`
-    );
+    throw new Error(`Job cannot be processed from status: ${job.status}`);
   }
 
   try {
@@ -26,10 +26,12 @@ export const processJob = async (jobId) => {
 
     const rl = readline.createInterface({
       input: fileStream,
-      crlfDelay: Infinity
+      crlfDelay: Infinity,
     });
 
     let rowsProcessed = 0;
+    let bytesProcessed = 0;
+
     const startTime = Date.now();
 
     for await (const line of rl) {
@@ -39,37 +41,63 @@ export const processJob = async (jobId) => {
 
       rowsProcessed++;
 
-      const elapsedSeconds =
-        (Date.now() - startTime) / 1000;
+      bytesProcessed += Buffer.byteLength(line, "utf8") + 1;
+
+      const elapsedSeconds = (Date.now() - startTime) / 1000;
 
       const rowsPerSecond =
-        elapsedSeconds > 0
-          ? Math.round(rowsProcessed / elapsedSeconds)
+        elapsedSeconds > 0 ? Math.round(rowsProcessed / elapsedSeconds) : 0;
+
+      const percent =
+        job.fileSize > 0
+          ? Math.min(100, Math.round((bytesProcessed / job.fileSize) * 100))
           : 0;
 
-      updateProcessingProgress(
+      const progress = updateProcessingProgress(
         jobId,
         rowsProcessed,
         rowsPerSecond,
-        0
+        percent,
       );
+
+      if (io) {
+        emitProgress(io, jobId, {
+          status: progress.status,
+          rowsProcessed: progress.rowsProcessed,
+          rowsPerSecond: progress.rowsPerSecond,
+          percent: progress.percent,
+        });
+      }
     }
 
-    const elapsedSeconds =
-      (Date.now() - startTime) / 1000;
+    const elapsedSeconds = (Date.now() - startTime) / 1000;
 
     const rowsPerSecond =
-      elapsedSeconds > 0
-        ? Math.round(rowsProcessed / elapsedSeconds)
-        : 0;
+      elapsedSeconds > 0 ? Math.round(rowsProcessed / elapsedSeconds) : 0;
 
-    return completeJob(
-      jobId,
-      rowsProcessed,
-      rowsPerSecond
-    );
+    const completedJob = completeJob(jobId, rowsProcessed, rowsPerSecond);
+
+    if (io) {
+      emitProgress(io, jobId, {
+        status: completedJob.status,
+        rowsProcessed: completedJob.rowsProcessed,
+        rowsPerSecond: completedJob.rowsPerSecond,
+        percent: 100,
+      });
+    }
+
+    return completedJob;
   } catch (error) {
-    failJob(jobId, error.message);
+    const failedJob = failJob(jobId, error.message);
+
+    if (io && failedJob) {
+      emitProgress(io, jobId, {
+        status: failedJob.status,
+        percent: failedJob.percent,
+        errors: failedJob.errors,
+      });
+    }
+
     throw error;
   }
 };

@@ -59,7 +59,7 @@ router.post("/jobs/:jobId/process", async (req, res) => {
     errors: [],
   });
 
-  processJob(jobId).catch((error) => {
+  processJob(jobId, req.app.get("io")).catch((error) => {
     console.error("Processing error:", error);
   });
 

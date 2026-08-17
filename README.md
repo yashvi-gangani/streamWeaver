@@ -1,4 +1,4 @@
-# StreamWeaver
+# StreamWeaver Infotact Project
 
 High-Throughput No-Code ETL Pipeline built with MERN.
 

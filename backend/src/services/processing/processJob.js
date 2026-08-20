@@ -8,6 +8,8 @@ import {
 } from "../../utils/jobStatus.js";
 
 import { emitProgress } from "../../utils/progressEmitter.js";
+import { transformRecords } from "./transformRecords.js";
+import { validateRecords } from "./validateRecords.js";
 
 export const processJob = async (jobId, io) => {
   const job = getJob(jobId);
@@ -23,38 +25,36 @@ export const processJob = async (jobId, io) => {
   try {
     const records = await parseFile(job.path);
 
-    const totalRecords = records.length;
+    const transformedRecords = transformRecords(records);
+
+    const { validRecords, errors } = validateRecords(transformedRecords);
+
+    const totalRecords = transformedRecords.length;
     const startTime = Date.now();
 
     let rowsProcessed = 0;
 
-    for (const record of records) {
+    for (const record of validRecords) {
       // Placeholder for future ETL transformation.
       // Transformation logic can be added here later.
-      void record;
 
       rowsProcessed++;
 
-      const elapsedSeconds =
-        (Date.now() - startTime) / 1000;
+      const elapsedSeconds = (Date.now() - startTime) / 1000;
 
       const rowsPerSecond =
-        elapsedSeconds > 0
-          ? Math.round(rowsProcessed / elapsedSeconds)
-          : 0;
+        elapsedSeconds > 0 ? Math.round(rowsProcessed / elapsedSeconds) : 0;
 
       const percent =
         totalRecords > 0
-          ? Math.round(
-              (rowsProcessed / totalRecords) * 100
-            )
+          ? Math.round((rowsProcessed / totalRecords) * 100)
           : 100;
 
       const progress = updateProcessingProgress(
         jobId,
         rowsProcessed,
         rowsPerSecond,
-        percent
+        percent,
       );
 
       if (io) {
@@ -67,19 +67,12 @@ export const processJob = async (jobId, io) => {
       }
     }
 
-    const elapsedSeconds =
-      (Date.now() - startTime) / 1000;
+    const elapsedSeconds = (Date.now() - startTime) / 1000;
 
     const rowsPerSecond =
-      elapsedSeconds > 0
-        ? Math.round(rowsProcessed / elapsedSeconds)
-        : 0;
+      elapsedSeconds > 0 ? Math.round(rowsProcessed / elapsedSeconds) : 0;
 
-    const completedJob = completeJob(
-      jobId,
-      rowsProcessed,
-      rowsPerSecond
-    );
+    const completedJob = completeJob(jobId, rowsProcessed, rowsPerSecond);
 
     if (io) {
       emitProgress(io, jobId, {

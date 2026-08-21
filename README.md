@@ -7,7 +7,7 @@ Stream large CSV/JSON files without loading the complete file into RAM, transfor
 
 ## Team structure
 
-- Member 1 — Backend Streaming & Upload
+- Member 1 — Backend Streaming & Upload (yashvi)
 - Member 2 — ETL Transformation & MongoDB
 - Member 3 — Frontend Upload, Mapping & Preview
 - Member 4 — Progress, Validation, Integration & Testing

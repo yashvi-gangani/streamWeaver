@@ -1,0 +1,192 @@
+/* whole page background, light and colorful gradient */
+.app-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+  background: linear-gradient(135deg, #e0f7fa 0%, #fff3e0 50%, #f3e5f5 100%);
+  padding: 30px 20px;
+}
+
+/* header section */
+.app-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.app-header h1 {
+  font-size: 42px;
+  margin: 0;
+  color: #5e35b1;
+}
+
+.app-header p {
+  color: #7b7b7b;
+  margin-top: 5px;
+}
+
+/* generic card style used everywhere */
+.card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 900px;
+  margin: 0 auto 25px auto;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.card h2 {
+  margin-top: 0;
+  color: #333333;
+}
+
+.hint-text {
+  color: #888888;
+  font-size: 14px;
+}
+
+/* upload card */
+.file-input {
+  display: block;
+  margin: 15px 0;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #42a5f5, #7e57c2);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.primary-btn:hover {
+  opacity: 0.9;
+}
+
+.primary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-text {
+  color: #e53935;
+  margin-top: 10px;
+}
+
+/* stat boxes row after upload */
+.stats-bar {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  max-width: 900px;
+  margin: 0 auto 25px auto;
+  flex-wrap: wrap;
+}
+
+.stat-box {
+  flex: 1;
+  min-width: 150px;
+  border-radius: 14px;
+  padding: 18px;
+  text-align: center;
+  color: #ffffff;
+}
+
+.stat-box h3 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.stat-box p {
+  margin: 5px 0 0 0;
+  font-size: 13px;
+}
+
+.stat-blue {
+  background: linear-gradient(135deg, #64b5f6, #1e88e5);
+}
+
+.stat-green {
+  background: linear-gradient(135deg, #81c784, #43a047);
+}
+
+.stat-orange {
+  background: linear-gradient(135deg, #ffb74d, #fb8c00);
+}
+
+/* mapper table */
+.mapper-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mapper-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.mapper-head {
+  font-weight: bold;
+  background: #ede7f6;
+  color: #5e35b1;
+}
+
+.source-col {
+  font-weight: 500;
+  color: #333333;
+}
+
+.dest-input {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #dddddd;
+}
+
+.transform-select {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #dddddd;
+}
+
+/* virtualized grid */
+.grid-header {
+  display: flex;
+  background: #ede7f6;
+  border-radius: 8px 8px 0 0;
+  font-weight: bold;
+  color: #5e35b1;
+}
+
+.grid-row {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.grid-cell {
+  flex: 1;
+  padding: 8px 10px;
+  font-size: 14px;
+  color: #444444;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-cell {
+  padding: 10px;
+}
+
+/* footer */
+.app-footer {
+  text-align: center;
+  color: #999999;
+  margin-top: 30px;
+  font-size: 13px;
+}

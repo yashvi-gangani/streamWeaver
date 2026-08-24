@@ -1,0 +1,9 @@
+/* basic reset so default browser styles dont mess things up */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+}

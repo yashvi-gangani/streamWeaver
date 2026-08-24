@@ -29,6 +29,10 @@ export const processJob = async (jobId, io) => {
 
     const { validRecords, errors } = validateRecords(transformedRecords);
 
+    if (errors.length > 0) {
+      updateProcessingProgress(jobId, 0, 0, 0);
+    }
+
     const totalRecords = transformedRecords.length;
     const startTime = Date.now();
 

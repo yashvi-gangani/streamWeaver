@@ -1,77 +1,59 @@
-# StreamWeaver Infotact Project
+# StreamWeaver
 
-High-Throughput No-Code ETL Pipeline built with MERN.
+High-Throughput No-Code ETL Pipeline - Mid Project Review Build (Week 1 + Week 2)
 
-## Project goal
-Stream large CSV/JSON files without loading the complete file into RAM, transform/map the data, and bulk-insert processed records into MongoDB while showing live progress.
+## What this covers so far
 
-## Team structure
+- **Week 1 Backend:** Multer streams the uploaded csv straight to disk, the file is never held fully in memory.
+- **Week 1 Frontend:** react-window virtual list shows a preview of the csv rows, only visible rows are actually rendered in the dom.
+- **Week 2 Backend:** A custom `stream.Transform` class (`csvToJsonStream.js`) reads the file in chunks and converts each line into a JSON object on the fly, no csv library used.
+- **Week 2 Frontend:** Column Mapper UI lets you map each source column to a destination field name and pick a simple transform (uppercase, lowercase, capitalize).
+- **Mid Project Review:** `backend/scripts/memoryTest.js` generates a 2 million row csv and streams it while logging RAM usage every second, to prove memory stays low.
 
-- Member 1 — Backend Streaming & Upload (yashvi)
-- Member 2 — ETL Transformation & MongoDB
-- Member 3 — Frontend Upload, Mapping & Preview
-- Member 4 — Progress, Validation, Integration & Testing
-
-## Folder ownership
-
-```text
-backend/
-  src/
-    config/
-    controllers/
-    middleware/
-    routes/
-    services/
-      upload/
-      etl/
-      database/
-    utils/
-
-frontend/
-  src/
-    components/
-    pages/
-    services/
-    hooks/
-    utils/
-    styles/
-
-docs/
-```
-
-## Getting started
+## How to run
 
 ### Backend
-```bash
+```
 cd backend
 npm install
-npm run dev
+npm start
+```
+Server runs on http://localhost:5000
+
+### Memory audit script (mid review proof)
+```
+cd backend
+npm run memory-test
 ```
 
 ### Frontend
-```bash
+```
 cd frontend
 npm install
-npm run dev
+npm start
+```
+App runs on http://localhost:3000
+
+## Folder structure
+
+```
+streamweaver/
+  backend/
+    server.js            -> express server + upload route
+    csvToJsonStream.js    -> custom transform stream (csv -> json)
+    scripts/memoryTest.js -> memory audit script
+  frontend/
+    src/
+      App.js
+      components/
+        UploadForm.js
+        DataGrid.js
+        ColumnMapper.js
 ```
 
-Create `backend/.env` from `.env.example`.
+## Still pending (Week 3 & Week 4, not done yet)
 
-## Important team rule
-
-Do not directly edit another member's module unless discussed first. Pull the latest `main` before starting work and use a separate feature branch.
-
-## Planned pipeline
-
-Upload file
--> streaming/chunk handling
--> CSV parsing/transformation
--> column mapping
--> validation
--> MongoDB bulk insert
--> WebSocket progress
--> final report
-
-## Source requirements
-
-The project specification calls for Node.js native streams, MongoDB bulk operations, React virtualization, sandboxed JavaScript transformations, and live processing progress.
+- Sandboxed execution of custom js rules (isolated-vm)
+- Live progress bar over websocket
+- MongoDB bulkWrite insertion
+- Error handling ui for failed rows

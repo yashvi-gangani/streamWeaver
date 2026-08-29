@@ -26,6 +26,10 @@ cd backend
 npm run memory-test
 ```
 
+## Team work
+sindhu sri - backend
+yashvi gangani - frontend
+
 ### Frontend
 ```
 cd frontend

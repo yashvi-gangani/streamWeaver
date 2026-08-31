@@ -93,6 +93,8 @@ app.get("/", (req, res) => {
 // -----------------------------
 
 app.post("/upload", upload.single("file"), (req, res) => {
+  const jobId = Date.now().toString();
+
   if (!req.file) {
     return res.status(400).json({
       message: "No file uploaded",
@@ -110,6 +112,14 @@ app.post("/upload", upload.single("file"), (req, res) => {
   const fileStream = fs.createReadStream(filePath);
   const csvTransform = new CsvToJsonStream();
 
+  // Tell the client that processing has started
+  io.emit("processing-progress", {
+    jobId,
+    status: "processing",
+    rowsProcessed: 0,
+    percent: 0,
+  });
+
   fileStream.pipe(csvTransform);
 
   csvTransform.on("data", (rowObject) => {
@@ -122,6 +132,16 @@ app.post("/upload", upload.single("file"), (req, res) => {
     if (columns.length === 0 && csvTransform.headers) {
       columns = csvTransform.headers;
     }
+
+    // Send progress periodically instead of on every row
+    if (totalRows % 100 === 0) {
+      io.emit("processing-progress", {
+        jobId,
+        status: "processing",
+        rowsProcessed: totalRows,
+        percent: 0,
+      });
+    }
   });
 
   csvTransform.on("end", () => {
@@ -133,10 +153,19 @@ app.post("/upload", upload.single("file"), (req, res) => {
       (endMemory - startMemory).toFixed(2)
     );
 
+    // Tell client processing is complete
+    io.emit("processing-progress", {
+      jobId,
+      status: "completed",
+      rowsProcessed: totalRows,
+      percent: 100,
+    });
+
     fs.unlink(filePath, () => {});
 
     res.json({
       message: "File processed successfully",
+      jobId,
       columns: columns,
       totalRows: totalRows,
       previewRows: previewRows,
@@ -149,9 +178,16 @@ app.post("/upload", upload.single("file"), (req, res) => {
   csvTransform.on("error", (err) => {
     console.log("Error while processing file:", err);
 
+    io.emit("processing-progress", {
+  jobId,
+  status: "failed",
+  error: err.message,
+});
+
     if (!res.headersSent) {
       res.status(500).json({
         message: "Error processing file",
+        jobId,
       });
     }
   });

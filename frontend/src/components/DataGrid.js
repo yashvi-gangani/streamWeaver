@@ -8,12 +8,25 @@ function DataGrid({ columns, rows, mapping }) {
   const gridHeight = 400;
 
   // this applies the chosen transform to a single cell value
-  function applyTransform(value, transformType) {
+  function applyTransform(value, rule) {
     if (!value) return value;
+    const transformType = rule.transform;
+
     if (transformType === "uppercase") return value.toUpperCase();
     if (transformType === "lowercase") return value.toLowerCase();
     if (transformType === "capitalize") {
       return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+    }
+    if (transformType === "custom") {
+      // this is just a quick browser side preview of the custom code
+      // the real, safe execution happens on the backend inside the sandbox during full processing
+      try {
+        // eslint-disable-next-line no-new-func
+        const userFunction = new Function("value", rule.customCode || "return value;");
+        return userFunction(value);
+      } catch (err) {
+        return "code error";
+      }
     }
     return value; // transformType is "none"
   }
@@ -27,7 +40,7 @@ function DataGrid({ columns, rows, mapping }) {
       <div className="grid-row" style={{ ...style, backgroundColor: bgColor }}>
         {columns.map((col) => {
           const rule = mapping[col] || { transform: "none" };
-          const displayValue = applyTransform(rowData[col], rule.transform);
+          const displayValue = applyTransform(rowData[col], rule);
           return (
             <div className="grid-cell" key={col}>
               {displayValue}

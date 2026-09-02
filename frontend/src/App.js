@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import UploadForm from "./components/UploadForm";
 import DataGrid from "./components/DataGrid";
 import ColumnMapper from "./components/ColumnMapper";
+import ProgressBar from "./components/ProgressBar";
 import "./App.css";
 
 function App() {
@@ -54,6 +55,8 @@ function App() {
       {uploadData && (
         <DataGrid columns={uploadData.columns} rows={uploadData.previewRows} mapping={mapping} />
       )}
+
+      {uploadData && <ProgressBar fileId={uploadData.fileId} mapping={mapping} />}
 
       <footer className="app-footer">Made for Infotact Solutions - Advanced MERN Stack Project</footer>
     </div>

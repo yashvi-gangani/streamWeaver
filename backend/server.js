@@ -74,7 +74,10 @@ app.post("/upload", upload.single("file"), (req, res) => {
 
   csvTransform.on("end", () => {
     const endMemory = process.memoryUsage().heapUsed / 1024 / 1024;
-    console.log("Memory used for preview (MB):", (endMemory - startMemory).toFixed(2));
+    console.log(
+      "Memory used for preview (MB):",
+      (endMemory - startMemory).toFixed(2),
+    );
 
     // keep the file on disk this time, week 3 needs to re-read it for full processing
     uploadedFiles[fileId] = { path: filePath, size: req.file.size };
@@ -104,7 +107,9 @@ io.on("connection", (socket) => {
     const fileInfo = uploadedFiles[fileId];
 
     if (!fileInfo) {
-      socket.emit("processing-error", { message: "File not found, please upload again" });
+      socket.emit("processing-error", {
+        message: "File not found, please upload again",
+      });
       return;
     }
 
@@ -118,6 +123,9 @@ io.on("connection", (socket) => {
     const csvTransform = new CsvToJsonStream();
     const mappingTransform = new ApplyMappingStream(mapping, sandbox);
 
+    // this line is the fix — without it the stream stalls after exactly 16 rows
+    mappingTransform.on("data", () => {});
+
     fileStream.on("data", (chunk) => {
       bytesRead += chunk.length;
     });
@@ -125,8 +133,12 @@ io.on("connection", (socket) => {
     // this sends a progress update to the frontend every second
     const progressInterval = setInterval(() => {
       const secondsElapsed = (Date.now() - startTime) / 1000;
-      const rowsPerSec = Math.round(mappingTransform.rowsProcessed / secondsElapsed) || 0;
-      const percent = Math.min(100, Math.round((bytesRead / fileInfo.size) * 100));
+      const rowsPerSec =
+        Math.round(mappingTransform.rowsProcessed / secondsElapsed) || 0;
+      const percent = Math.min(
+        100,
+        Math.round((bytesRead / fileInfo.size) * 100),
+      );
 
       socket.emit("progress", {
         rowsProcessed: mappingTransform.rowsProcessed,
@@ -143,7 +155,8 @@ io.on("connection", (socket) => {
 
       socket.emit("progress", {
         rowsProcessed: mappingTransform.rowsProcessed,
-        rowsPerSec: Math.round(mappingTransform.rowsProcessed / totalTimeSeconds) || 0,
+        rowsPerSec:
+          Math.round(mappingTransform.rowsProcessed / totalTimeSeconds) || 0,
         percent: 100,
       });
 
@@ -161,7 +174,9 @@ io.on("connection", (socket) => {
     mappingTransform.on("error", (err) => {
       clearInterval(progressInterval);
       console.log("Error during processing:", err);
-      socket.emit("processing-error", { message: "Something went wrong during processing" });
+      socket.emit("processing-error", {
+        message: "Something went wrong during processing",
+      });
     });
   });
 

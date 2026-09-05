@@ -1,14 +1,17 @@
 // this component starts the full file processing and shows live progress over a websocket
 import React, { useState } from "react";
 import { io } from "socket.io-client";
+import ErrorRows from "./ErrorRows";
 
 function ProgressBar({ fileId, mapping }) {
   const [percent, setPercent] = useState(0);
   const [rowsProcessed, setRowsProcessed] = useState(0);
   const [rowsPerSec, setRowsPerSec] = useState(0);
+  const [failedCount, setFailedCount] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [resultData, setResultData] = useState(null); // holds insertedCount, failedRowsSample, savedToDatabase
 
   // runs when the user clicks the process button
   function startProcessing() {
@@ -18,6 +21,8 @@ function ProgressBar({ fileId, mapping }) {
     setPercent(0);
     setRowsProcessed(0);
     setRowsPerSec(0);
+    setFailedCount(0);
+    setResultData(null);
 
     const socket = io("http://localhost:5000");
 
@@ -30,11 +35,13 @@ function ProgressBar({ fileId, mapping }) {
       setPercent(data.percent);
       setRowsProcessed(data.rowsProcessed);
       setRowsPerSec(data.rowsPerSec);
+      setFailedCount(data.failedCount);
     });
 
     socket.on("processing-complete", (data) => {
       setIsProcessing(false);
       setIsDone(true);
+      setResultData(data);
       socket.disconnect();
     });
 
@@ -50,7 +57,7 @@ function ProgressBar({ fileId, mapping }) {
       <h2>⚡ Full File Processing</h2>
       <p className="hint-text">
         This actually runs your mapping rules (including custom code) on every row of the file, safely
-        in a sandbox, while streaming live progress here.
+        in a sandbox, buffers good rows and saves them to MongoDB every 5000 records.
       </p>
 
       <button className="primary-btn" onClick={startProcessing} disabled={isProcessing}>
@@ -67,11 +74,37 @@ function ProgressBar({ fileId, mapping }) {
             <span>{percent}% complete</span>
             <span>{rowsProcessed} rows processed</span>
             <span>{rowsPerSec} rows/sec</span>
+            <span>{failedCount} failed</span>
           </div>
         </div>
       )}
 
-      {isDone && <p className="success-text">✅ Done! Your file was fully processed.</p>}
+      {isDone && resultData && (
+        <div className="result-section">
+          <p className="success-text">✅ Done! Your file was fully processed.</p>
+
+          <div className="result-stats">
+            <div className="result-stat">
+              <strong>{resultData.insertedCount}</strong>
+              <span>Rows saved to DB</span>
+            </div>
+            <div className="result-stat">
+              <strong>{resultData.timeTakenSeconds}s</strong>
+              <span>Time taken</span>
+            </div>
+          </div>
+
+          {!resultData.savedToDatabase && (
+            <p className="warning-text">
+              ⚠️ MongoDB is not connected, so rows were processed but not saved. Start MongoDB and try
+              again to actually store the data.
+            </p>
+          )}
+
+          <ErrorRows failedCount={resultData.failedCount} failedRowsSample={resultData.failedRowsSample} />
+        </div>
+      )}
+
       {errorMsg && <p className="error-text">{errorMsg}</p>}
     </div>
   );

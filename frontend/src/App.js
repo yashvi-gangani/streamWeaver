@@ -3,12 +3,17 @@ import React, { useState } from "react";
 import UploadForm from "./components/UploadForm";
 import DataGrid from "./components/DataGrid";
 import ColumnMapper from "./components/ColumnMapper";
+import DedupeSettings from "./components/DedupeSettings";
 import ProgressBar from "./components/ProgressBar";
+import JobHistoryDashboard from "./components/JobHistoryDashboard";
 import "./App.css";
 
 function App() {
   const [uploadData, setUploadData] = useState(null); // holds columns, previewRows, totalRows etc
   const [mapping, setMapping] = useState({}); // holds destination name + transform for every column
+  const [jobRefreshCount, setJobRefreshCount] = useState(0); // bumping this makes the dashboard reload
+  const [dedupeEnabled, setDedupeEnabled] = useState(false);
+  const [dedupeColumn, setDedupeColumn] = useState("");
 
   // called from UploadForm after backend finishes processing the file
   function handleUploadSuccess(data) {
@@ -20,6 +25,8 @@ function App() {
       return acc;
     }, {});
     setMapping(defaultMapping);
+    setDedupeEnabled(false);
+    setDedupeColumn("");
   }
 
   return (
@@ -56,7 +63,28 @@ function App() {
         <DataGrid columns={uploadData.columns} rows={uploadData.previewRows} mapping={mapping} />
       )}
 
-      {uploadData && <ProgressBar fileId={uploadData.fileId} mapping={mapping} />}
+      {uploadData && (
+        <DedupeSettings
+          columns={uploadData.columns}
+          mapping={mapping}
+          dedupeEnabled={dedupeEnabled}
+          dedupeColumn={dedupeColumn}
+          onToggle={setDedupeEnabled}
+          onColumnChange={setDedupeColumn}
+        />
+      )}
+
+      {uploadData && (
+        <ProgressBar
+          fileId={uploadData.fileId}
+          mapping={mapping}
+          dedupeEnabled={dedupeEnabled}
+          dedupeColumn={dedupeColumn}
+          onProcessingComplete={() => setJobRefreshCount((count) => count + 1)}
+        />
+      )}
+
+      <JobHistoryDashboard refreshTrigger={jobRefreshCount} />
 
       <footer className="app-footer">Made for Infotact Solutions - Advanced MERN Stack Project</footer>
     </div>

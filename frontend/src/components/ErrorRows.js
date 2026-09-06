@@ -2,17 +2,29 @@
 // week 4 error handling ui layer
 import React from "react";
 
-function ErrorRows({ failedCount, failedRowsSample }) {
+function ErrorRows({ failedCount, failedRowsSample, failedFileAvailable, jobId }) {
   if (failedCount === 0) {
     return <p className="success-text">✅ No bad rows found, every row passed validation.</p>;
   }
 
   return (
     <div className="error-rows-box">
-      <p className="error-heading">
-        ⚠️ {failedCount} row{failedCount > 1 ? "s" : ""} failed validation
-        {failedRowsSample.length < failedCount && ` (showing first ${failedRowsSample.length})`}
-      </p>
+      <div className="error-rows-header">
+        <p className="error-heading">
+          ⚠️ {failedCount} row{failedCount > 1 ? "s" : ""} failed validation
+          {failedRowsSample.length < failedCount && ` (showing first ${failedRowsSample.length})`}
+        </p>
+
+        {failedFileAvailable && (
+          <a
+            className="download-btn"
+            href={`http://localhost:5000/download-failed/${jobId}`}
+            download
+          >
+            ⬇️ Download All Failed Rows (CSV)
+          </a>
+        )}
+      </div>
 
       <div className="error-rows-list">
         {failedRowsSample.map((item) => (

@@ -26,4 +26,10 @@ function getCollection() {
   return db.collection("processed_data");
 }
 
-module.exports = { connectToDatabase, getCollection };
+// returns the jobs collection, used for the job history dashboard
+function getJobsCollection() {
+  if (!db) return null;
+  return db.collection("jobs");
+}
+
+module.exports = { connectToDatabase, getCollection, getJobsCollection };

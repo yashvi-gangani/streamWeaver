@@ -3,3 +3,4 @@ build/
 uploads/*.csv
 *.log
 .env
+failed_exports/

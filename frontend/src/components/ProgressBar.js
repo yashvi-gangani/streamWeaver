@@ -2,12 +2,16 @@
 import React, { useState } from "react";
 import { io } from "socket.io-client";
 import ErrorRows from "./ErrorRows";
+import DataQualityScore from "./DataQualityScore";
+import LiveStats from "./LiveStats";
 
-function ProgressBar({ fileId, mapping }) {
+function ProgressBar({ fileId, mapping, dedupeEnabled, dedupeColumn, onProcessingComplete }) {
   const [percent, setPercent] = useState(0);
   const [rowsProcessed, setRowsProcessed] = useState(0);
   const [rowsPerSec, setRowsPerSec] = useState(0);
   const [failedCount, setFailedCount] = useState(0);
+  const [duplicateCount, setDuplicateCount] = useState(0);
+  const [columnStats, setColumnStats] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -22,12 +26,18 @@ function ProgressBar({ fileId, mapping }) {
     setRowsProcessed(0);
     setRowsPerSec(0);
     setFailedCount(0);
+    setDuplicateCount(0);
+    setColumnStats(null);
     setResultData(null);
 
     const socket = io("http://localhost:5000");
 
     socket.on("connect", () => {
-      socket.emit("start-processing", { fileId, mapping });
+      socket.emit("start-processing", {
+        fileId,
+        mapping,
+        dedupeColumn: dedupeEnabled ? dedupeColumn : null,
+      });
     });
 
     // backend sends this roughly once every second while the file streams through
@@ -36,6 +46,8 @@ function ProgressBar({ fileId, mapping }) {
       setRowsProcessed(data.rowsProcessed);
       setRowsPerSec(data.rowsPerSec);
       setFailedCount(data.failedCount);
+      setDuplicateCount(data.duplicateCount);
+      setColumnStats(data.columnStats);
     });
 
     socket.on("processing-complete", (data) => {
@@ -43,6 +55,7 @@ function ProgressBar({ fileId, mapping }) {
       setIsDone(true);
       setResultData(data);
       socket.disconnect();
+      if (onProcessingComplete) onProcessingComplete(); // tells App.js to refresh the job dashboard
     });
 
     socket.on("processing-error", (data) => {
@@ -75,9 +88,12 @@ function ProgressBar({ fileId, mapping }) {
             <span>{rowsProcessed} rows processed</span>
             <span>{rowsPerSec} rows/sec</span>
             <span>{failedCount} failed</span>
+            {dedupeEnabled && <span>{duplicateCount} duplicates removed</span>}
           </div>
         </div>
       )}
+
+      {isProcessing && <LiveStats columnStats={columnStats} />}
 
       {isDone && resultData && (
         <div className="result-section">
@@ -92,6 +108,12 @@ function ProgressBar({ fileId, mapping }) {
               <strong>{resultData.timeTakenSeconds}s</strong>
               <span>Time taken</span>
             </div>
+            {resultData.dedupeEnabled && (
+              <div className="result-stat">
+                <strong>{resultData.duplicateCount}</strong>
+                <span>Duplicates removed</span>
+              </div>
+            )}
           </div>
 
           {!resultData.savedToDatabase && (
@@ -101,7 +123,16 @@ function ProgressBar({ fileId, mapping }) {
             </p>
           )}
 
-          <ErrorRows failedCount={resultData.failedCount} failedRowsSample={resultData.failedRowsSample} />
+          <ErrorRows
+            failedCount={resultData.failedCount}
+            failedRowsSample={resultData.failedRowsSample}
+            failedFileAvailable={resultData.failedFileAvailable}
+            jobId={resultData.jobId}
+          />
+
+          <DataQualityScore qualityScore={resultData.qualityScore} duplicateCount={resultData.duplicateCount} />
+
+          <LiveStats columnStats={resultData.columnStats} />
         </div>
       )}
 

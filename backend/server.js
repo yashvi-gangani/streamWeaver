@@ -27,7 +27,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 const PREVIEW_LIMIT = 1000; // we only keep first 1000 rows for preview, rest we just count
 const BATCH_SIZE = 5000; // how many rows we buffer before writing to mongodb at once
 const MAX_FAILED_SAMPLE = 50; // we only send a sample of failed rows back to the frontend, not all of them

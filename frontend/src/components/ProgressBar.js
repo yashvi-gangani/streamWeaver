@@ -30,7 +30,7 @@ function ProgressBar({ fileId, mapping, dedupeEnabled, dedupeColumn, onProcessin
     setColumnStats(null);
     setResultData(null);
 
-    const socket = io("http://localhost:5000");
+    const socket = io(process.env.REACT_APP_API_URL);
 
     socket.on("connect", () => {
       socket.emit("start-processing", {

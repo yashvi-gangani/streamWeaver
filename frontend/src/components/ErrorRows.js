@@ -18,7 +18,7 @@ function ErrorRows({ failedCount, failedRowsSample, failedFileAvailable, jobId }
         {failedFileAvailable && (
           <a
             className="download-btn"
-            href={`http://localhost:5000/download-failed/${jobId}`}
+            href={`${process.env.REACT_APP_API_URL}/download-failed/${jobId}`}
             download
           >
             ⬇️ Download All Failed Rows (CSV)

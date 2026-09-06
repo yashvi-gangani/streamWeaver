@@ -27,7 +27,10 @@ function UploadForm({ onUploadSuccess }) {
     setErrorMsg("");
 
     try {
-      const response = await axios.post("http://localhost:5000/upload", formData);
+      const response = await axios.post(
+  `${process.env.REACT_APP_API_URL}/upload`,
+  formData
+);
       onUploadSuccess(response.data);
     } catch (err) {
       console.log(err);

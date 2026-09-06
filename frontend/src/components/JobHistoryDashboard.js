@@ -10,7 +10,7 @@ function JobHistoryDashboard({ refreshTrigger }) {
   const loadJobs = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await axios.get("http://localhost:5000/jobs");
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/jobs`);
       setJobs(response.data.jobs);
       setDatabaseConnected(response.data.databaseConnected);
     } catch (err) {

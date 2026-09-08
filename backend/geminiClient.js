@@ -2,7 +2,7 @@
 // keeping ai calls in one place makes it easy to swap models or providers later
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const MODEL_NAME = "gemini-1.5-flash"; // free tier friendly, change here if you want a different model
+const MODEL_NAME = "gemini-3.5-flash"; // free tier friendly, change here if you want a different model
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`;
 
 // sends a plain text prompt to gemini and returns the raw text reply

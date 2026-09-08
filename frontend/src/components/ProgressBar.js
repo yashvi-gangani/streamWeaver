@@ -4,8 +4,10 @@ import { io } from "socket.io-client";
 import ErrorRows from "./ErrorRows";
 import DataQualityScore from "./DataQualityScore";
 import LiveStats from "./LiveStats";
+import AiQualitySummary from "./AiQualitySummary";
+import AiAnomalyPanel from "./AiAnomalyPanel";
 
-function ProgressBar({ fileId, mapping, dedupeEnabled, dedupeColumn, onProcessingComplete }) {
+function ProgressBar({ fileId, mapping, dedupeEnabled, dedupeColumn, rowRules, onProcessingComplete }) {
   const [percent, setPercent] = useState(0);
   const [rowsProcessed, setRowsProcessed] = useState(0);
   const [rowsPerSec, setRowsPerSec] = useState(0);
@@ -37,6 +39,7 @@ function ProgressBar({ fileId, mapping, dedupeEnabled, dedupeColumn, onProcessin
         fileId,
         mapping,
         dedupeColumn: dedupeEnabled ? dedupeColumn : null,
+        rowRules: rowRules || [],
       });
     });
 
@@ -69,8 +72,9 @@ function ProgressBar({ fileId, mapping, dedupeEnabled, dedupeColumn, onProcessin
     <div className="card progress-card">
       <h2>⚡ Full File Processing</h2>
       <p className="hint-text">
-        This actually runs your mapping rules (including custom code) on every row of the file, safely
-        in a sandbox, buffers good rows and saves them to MongoDB every 5000 records.
+        This actually runs your mapping rules (including custom code and AI-approved row rules) on every
+        row of the file, safely in a sandbox, buffers good rows and saves them to MongoDB every 5000
+        records.
       </p>
 
       <button className="primary-btn" onClick={startProcessing} disabled={isProcessing}>
@@ -132,7 +136,17 @@ function ProgressBar({ fileId, mapping, dedupeEnabled, dedupeColumn, onProcessin
 
           <DataQualityScore qualityScore={resultData.qualityScore} duplicateCount={resultData.duplicateCount} />
 
+          <AiQualitySummary
+            totalRows={resultData.totalRows}
+            failedCount={resultData.failedCount}
+            duplicateCount={resultData.duplicateCount}
+            qualityScore={resultData.qualityScore}
+            columnStats={resultData.columnStats}
+          />
+
           <LiveStats columnStats={resultData.columnStats} />
+
+          <AiAnomalyPanel anomalies={resultData.anomalies} />
         </div>
       )}
 

@@ -1,10 +1,11 @@
 // this component lets the user map each csv column to a destination field name
 // and pick a small transformation, this is the no-code mapping ui part
 import React from "react";
+import AiAutoMapping from "./AiAutoMapping";
 
 const TRANSFORM_OPTIONS = ["none", "uppercase", "lowercase", "capitalize", "custom"];
 
-function ColumnMapper({ columns, mapping, onMappingChange }) {
+function ColumnMapper({ columns, mapping, onMappingChange, previewRows }) {
   // this function updates just the destination name for one column
   function handleDestinationChange(col, value) {
     onMappingChange({ ...mapping, [col]: { ...mapping[col], destination: value } });
@@ -20,6 +21,17 @@ function ColumnMapper({ columns, mapping, onMappingChange }) {
     onMappingChange({ ...mapping, [col]: { ...mapping[col], customCode: value } });
   }
 
+  // this applies every ai suggestion at once, filling in the destination field names
+  function applyAiSuggestions(suggestions) {
+    const updatedMapping = { ...mapping };
+    suggestions.forEach((item) => {
+      if (updatedMapping[item.column]) {
+        updatedMapping[item.column] = { ...updatedMapping[item.column], destination: item.suggestedField };
+      }
+    });
+    onMappingChange(updatedMapping);
+  }
+
   return (
     <div className="card mapper-card">
       <h2>🗺️ Map Your Columns</h2>
@@ -27,6 +39,8 @@ function ColumnMapper({ columns, mapping, onMappingChange }) {
         Match each source column to a destination field. Pick "custom" to write your own tiny JS rule,
         it runs safely in a sandbox on the server.
       </p>
+
+      <AiAutoMapping columns={columns} previewRows={previewRows} onAcceptSuggestions={applyAiSuggestions} />
 
       <div className="mapper-table">
         <div className="mapper-row mapper-head">

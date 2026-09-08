@@ -5,7 +5,7 @@
 function createStatsTracker(columnNames) {
   const stats = {};
   columnNames.forEach((col) => {
-    stats[col] = { numericCount: 0, sum: 0, min: null, max: null, missingCount: 0 };
+    stats[col] = { numericCount: 0, sum: 0, sumOfSquares: 0, min: null, max: null, missingCount: 0 };
   });
   return stats;
 }
@@ -25,6 +25,7 @@ function updateStats(stats, row) {
     if (!Number.isNaN(numericValue)) {
       colStat.numericCount++;
       colStat.sum += numericValue;
+      colStat.sumOfSquares += numericValue * numericValue; // needed later to work out standard deviation
       colStat.min = colStat.min === null ? numericValue : Math.min(colStat.min, numericValue);
       colStat.max = colStat.max === null ? numericValue : Math.max(colStat.max, numericValue);
     }
@@ -37,12 +38,21 @@ function getStatsSnapshot(stats, rowsProcessedSoFar) {
   for (const col in stats) {
     const colStat = stats[col];
     const isNumeric = colStat.numericCount > 0;
+    const avg = isNumeric ? colStat.sum / colStat.numericCount : null;
+
+    // standard deviation = sqrt(average of squares - square of average)
+    let stdDev = null;
+    if (isNumeric && colStat.numericCount > 1) {
+      const variance = colStat.sumOfSquares / colStat.numericCount - avg * avg;
+      stdDev = variance > 0 ? Math.sqrt(variance) : 0;
+    }
 
     snapshot[col] = {
       isNumeric: isNumeric,
       min: isNumeric ? colStat.min : null,
       max: isNumeric ? colStat.max : null,
-      avg: isNumeric ? Math.round((colStat.sum / colStat.numericCount) * 100) / 100 : null,
+      avg: isNumeric ? Math.round(avg * 100) / 100 : null,
+      stdDev: stdDev !== null ? Math.round(stdDev * 100) / 100 : null,
       missingPercent:
         rowsProcessedSoFar === 0 ? 0 : Math.round((colStat.missingCount / rowsProcessedSoFar) * 100),
     };

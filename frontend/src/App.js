@@ -4,6 +4,7 @@ import UploadForm from "./components/UploadForm";
 import DataGrid from "./components/DataGrid";
 import ColumnMapper from "./components/ColumnMapper";
 import DedupeSettings from "./components/DedupeSettings";
+import NlRuleBuilder from "./components/NlRuleBuilder";
 import ProgressBar from "./components/ProgressBar";
 import JobHistoryDashboard from "./components/JobHistoryDashboard";
 import "./App.css";
@@ -14,6 +15,7 @@ function App() {
   const [jobRefreshCount, setJobRefreshCount] = useState(0); // bumping this makes the dashboard reload
   const [dedupeEnabled, setDedupeEnabled] = useState(false);
   const [dedupeColumn, setDedupeColumn] = useState("");
+  const [rowRules, setRowRules] = useState([]); // ai-approved cross-column rules
 
   // called from UploadForm after backend finishes processing the file
   function handleUploadSuccess(data) {
@@ -27,7 +29,11 @@ function App() {
     setMapping(defaultMapping);
     setDedupeEnabled(false);
     setDedupeColumn("");
+    setRowRules([]);
   }
+
+  // the destination field names currently in the mapping, used by the nl rule builder
+  const destinationFieldNames = Object.values(mapping).map((rule) => rule.destination);
 
   return (
     <div className="app-container">
@@ -56,7 +62,12 @@ function App() {
       )}
 
       {uploadData && (
-        <ColumnMapper columns={uploadData.columns} mapping={mapping} onMappingChange={setMapping} />
+        <ColumnMapper
+          columns={uploadData.columns}
+          mapping={mapping}
+          onMappingChange={setMapping}
+          previewRows={uploadData.previewRows}
+        />
       )}
 
       {uploadData && (
@@ -75,11 +86,16 @@ function App() {
       )}
 
       {uploadData && (
+        <NlRuleBuilder columns={destinationFieldNames} rowRules={rowRules} onRowRulesChange={setRowRules} />
+      )}
+
+      {uploadData && (
         <ProgressBar
           fileId={uploadData.fileId}
           mapping={mapping}
           dedupeEnabled={dedupeEnabled}
           dedupeColumn={dedupeColumn}
+          rowRules={rowRules}
           onProcessingComplete={() => setJobRefreshCount((count) => count + 1)}
         />
       )}

@@ -1,7 +1,6 @@
 /* whole page background, light and colorful gradient */
 .app-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
   background: linear-gradient(135deg, #e0f7fa 0%, #fff3e0 50%, #f3e5f5 100%);
   padding: 30px 20px;
 }
@@ -234,6 +233,8 @@
   margin-top: 8px;
   font-size: 13px;
   color: #666666;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .success-text {
@@ -251,10 +252,12 @@
   display: flex;
   gap: 15px;
   margin: 12px 0;
+  flex-wrap: wrap;
 }
 
 .result-stat {
   flex: 1;
+  min-width: 120px;
   background: #f3f0ff;
   border-radius: 10px;
   padding: 12px;
@@ -543,4 +546,196 @@
 
 .download-btn:hover {
   background: #388e3c;
+}
+
+/* ai buttons, used across all ai features */
+.ai-btn {
+  background: linear-gradient(135deg, #ab47bc, #7e57c2);
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  margin: 8px 0;
+}
+
+.ai-btn:hover {
+  opacity: 0.9;
+}
+
+.ai-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ai-accept-btn {
+  background: #43a047;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.ai-accept-btn:hover {
+  background: #388e3c;
+}
+
+/* ai auto mapping suggestions */
+.ai-mapping-box {
+  margin-bottom: 15px;
+}
+
+.ai-suggestions-list {
+  background: #f3e5f5;
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 8px;
+}
+
+.ai-suggestion-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 13px;
+  color: #4a148c;
+}
+
+.ai-suggestion-col {
+  font-weight: 500;
+}
+
+.ai-suggestion-arrow {
+  color: #ab47bc;
+}
+
+.ai-suggestion-field {
+  font-weight: 600;
+}
+
+.ai-suggestion-confidence {
+  margin-left: auto;
+  background: #ce93d8;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+}
+
+/* ai summary text box, used for quality summary and anomaly explanation */
+.ai-summary-text {
+  background: #f3e5f5;
+  border-radius: 10px;
+  padding: 14px;
+  margin-top: 10px;
+}
+
+.ai-summary-label {
+  margin: 0 0 6px 0;
+  font-weight: 600;
+  color: #6a1b9a;
+  font-size: 13px;
+}
+
+/* natural language rule builder */
+.nl-instruction-box {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #dddddd;
+  font-size: 14px;
+  resize: vertical;
+  margin-bottom: 8px;
+}
+
+.proposed-rule-box {
+  background: #fff8e1;
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 10px;
+}
+
+.proposed-rule-code {
+  background: #263238;
+  color: #aed581;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  overflow-x: auto;
+  margin: 0 0 8px 0;
+}
+
+.approved-rules-list {
+  margin-top: 8px;
+}
+
+.approved-rule-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #e8f5e9;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.remove-rule-btn {
+  background: none;
+  border: none;
+  color: #c62828;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+/* anomaly panel */
+.anomaly-box {
+  margin-top: 16px;
+}
+
+.anomaly-heading {
+  color: #e65100;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.anomaly-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.anomaly-item {
+  background: #fff3e0;
+  border-left: 4px solid #fb8c00;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #555555;
+}
+
+/* resume/retry button in job dashboard */
+.resume-btn {
+  background: #1565c0;
+  color: white;
+  border: none;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  cursor: pointer;
+  margin-left: 6px;
+}
+
+.resume-btn:hover {
+  background: #0d47a1;
+}
+
+.resume-status {
+  padding: 4px 10px 10px 10px;
+  font-style: italic;
 }

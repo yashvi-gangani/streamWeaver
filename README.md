@@ -1,455 +1,170 @@
 # StreamWeaver
 
-**High-Throughput No-Code ETL Pipeline**
+A high-throughput, no-code ETL pipeline that lets users upload large CSV files, map and transform columns visually (including AI-assisted mapping and custom sandboxed rules), and stream the cleaned data into MongoDB — without ever loading the whole file into memory.
 
-StreamWeaver is a high-throughput, no-code ETL (Extract, Transform, Load) pipeline designed to process large CSV files efficiently without loading the entire dataset into memory.
-
-The project uses Node.js streams, React virtualization, MongoDB, Socket.IO, and sandboxed JavaScript transformations to provide a scalable and interactive data processing workflow.
+Built for Infotact Solutions - Advanced MERN Stack Engineering project.
 
 ---
 
-## 🚀 Key Features
+## What this covers
 
-### 📤 Large File Upload & Streaming
+### Week 1
+- **Backend:** Multer streams the uploaded CSV straight to disk, the file is never held fully in memory.
+- **Frontend:** react-window virtual list shows a preview of the CSV rows, only visible rows are rendered in the DOM.
 
-* Upload CSV files through the web interface.
-* Files are streamed directly to disk instead of being completely loaded into RAM.
-* Supports processing of large datasets with low memory consumption.
-* File type and size validation is performed before processing.
-* Each upload is assigned a unique processing job.
+### Week 2
+- **Backend:** A custom `stream.Transform` class (`csvToJsonStream.js`) reads the file in chunks and converts each line into a JSON object on the fly, no CSV library used.
+- **Frontend:** Column Mapper UI lets you map each source column to a destination field name and pick a simple transform (uppercase, lowercase, capitalize). Mapping state lives in `App.js` and updates the preview grid live.
 
-### 🔄 Streaming ETL Processing
+### Week 3
+- **Backend:** `sandboxRunner.js` uses `isolated-vm` to run the user's own custom JS rule (e.g. `return value.toUpperCase()`) in a separate, memory-limited sandbox with a timeout. `applyMappingStream.js` applies this to every row as it streams through. Socket.IO streams live progress (`rowsProcessed`, `rowsPerSec`, `percent`) back to the client.
+- **Frontend:** ColumnMapper has a "custom" transform option with a code textarea. `ProgressBar.js` connects over websocket with a "Process Full File" button and a live progress bar.
 
-The complete pipeline processes records incrementally:
+### Week 4
+- **Backend:** Buffers processed rows and writes them to MongoDB using `insertMany` in batches of 5,000. Every row is validated (missing values / custom code errors get flagged, not inserted) and a running count plus a sample of failed rows is tracked.
+- **Frontend:** `ErrorRows.js` shows failed rows highlighted in red, with counts, and a fallback message if MongoDB isn't connected.
 
-**Upload → Parse → Transform → Validate → Analyze → Store/Export → Report**
+### Extra features (beyond the original 4-week plan)
 
-* Uses Node.js `stream.Transform` for memory-efficient processing.
-* CSV records are converted to JSON objects while streaming.
-* Records are processed incrementally instead of loading the complete file.
-* Supports high-volume data processing.
+| Feature | What it does |
+|---|---|
+| **Data Quality Score** | Deterministic 0-100 score (`qualityScore.js`) based on Completeness, Validity, and Uniqueness — no AI needed. |
+| **Job History Dashboard** | Every processing run is saved to a `jobs` collection in MongoDB and listed in a dashboard (filename, rows, saved/failed counts, quality score, status). |
+| **Duplicate Removal** | Pick a column (e.g. `email`) to automatically drop rows with a repeated value during the same streaming pass (keeps the first occurrence). |
+| **Live Streaming Statistics** | Per-column min/max/avg and missing % update live every second while processing runs (`columnStats.js`). |
+| **Failed-Row CSV Export** | Every failed row (not just the on-screen sample) is written to a real file you can download after processing. |
+| **Resume/Retry Failed Jobs** | Processing checkpoints (rows processed, insert/fail/duplicate counts) save to MongoDB every second. If the server crashes mid-job, click "Resume" in the Job Dashboard to continue from where it left off instead of starting over. |
+| **AI Auto Column Mapping** | Gemini looks at your column names + sample values and suggests clean destination field names with a confidence %. |
+| **AI Data Quality Summary** | Gemini writes a short plain-English explanation of your quality score results. |
+| **AI Anomaly Detection** | Deterministic statistics (3-standard-deviations rule, `anomalyDetector.js`) flag outlier values; Gemini explains them in plain English on request. |
+| **Natural Language Rule Builder** | Type a plain-English rule (e.g. "if age is below 18, mark as minor"), Gemini proposes JavaScript code, you review and approve it before it runs on your data (`rowRuleRunner.js`, sandboxed via `isolated-vm`). |
 
-### 🗺️ No-Code Column Mapping
+---
 
-The Column Mapper allows users to configure transformations without modifying backend code.
+## Tech stack
 
-Supported transformations include:
+- **Backend:** Node.js, Express, Socket.IO, Multer, MongoDB driver, isolated-vm
+- **Frontend:** React, react-window, axios, socket.io-client
+- **Database:** MongoDB (local or Atlas)
+- **AI:** Google Gemini API (free tier — `gemini-1.5-flash`)
 
-* Uppercase
-* Lowercase
-* Capitalize
-* Custom JavaScript transformations
+---
 
-Example custom rule:
+## Setup
 
-```javascript
-return value.toUpperCase();
+### 1. Backend
+
 ```
-
-Mappings are applied to each record during streaming processing.
-
-### 🔐 Sandboxed Custom Transformations
-
-Custom JavaScript rules are executed using `isolated-vm`.
-
-* User code runs inside an isolated environment.
-* Execution is memory-limited.
-* Execution has a timeout.
-* Custom transformations cannot directly access the main Node.js process.
-* Helps prevent unsafe user-defined code from affecting the application.
-
-### 📊 Live Processing Progress
-
-StreamWeaver provides real-time processing updates using Socket.IO.
-
-The frontend displays:
-
-* Rows processed
-* Processing percentage
-* Rows per second
-* Current processing status
-* Processing errors
-* Completion status
-
-The progress information is updated while the backend is processing the file.
-
-### 📈 Live Processing Statistics
-
-The application provides live statistics during processing, helping users understand how the dataset is being processed in real time.
-
-Statistics include information such as:
-
-* Processed rows
-* Processing rate
-* Progress percentage
-* Dataset statistics
-* Processing status
-
-### 🧪 Data Validation & Failed Rows
-
-Records can be validated during the ETL pipeline.
-
-Invalid or failed records can be tracked separately so that users can identify data-quality problems instead of silently losing problematic rows.
-
-The frontend includes an **Error Rows** interface for reviewing failed records.
-
-### 📋 Data Quality Analysis
-
-StreamWeaver includes data-quality analysis features to help users understand the quality of their dataset.
-
-The system can provide information such as:
-
-* Valid vs invalid records
-* Missing values
-* Column-level statistics
-* Data-quality score
-* Processing results
-
-### 📊 Column Statistics
-
-Column-level statistics help users understand their uploaded dataset before or during processing.
-
-This provides additional visibility into the structure and quality of the incoming data.
-
-### ♻️ Deduplication Controls
-
-The application includes deduplication settings to help manage duplicate records during the ETL workflow.
-
-Users can configure how duplicate records should be handled instead of relying on a fixed processing rule.
-
-### 🗂️ Job History
-
-StreamWeaver maintains processing job information so users can review previous ETL operations.
-
-The Job History Dashboard provides visibility into:
-
-* Previous jobs
-* Job status
-* Processing results
-* Row counts
-* Processing information
-
-### 💾 MongoDB Integration
-
-Processed data can be integrated with MongoDB using efficient database operations.
-
-The backend includes MongoDB connectivity and database utilities designed for handling processed ETL records efficiently.
-
-### 📄 CSV Output
-
-The pipeline also supports generating CSV output from processed records, making it possible to export transformed data for further use.
-
----
-
-## 🧠 Memory-Efficient Architecture
-
-One of the main goals of StreamWeaver is to process large datasets without keeping the entire file in memory.
-
-Instead of:
-
-```text
-Large CSV
-   ↓
-Load entire file into RAM
-   ↓
-Process everything
-```
-
-StreamWeaver uses:
-
-```text
-Large CSV
-   ↓
-File Stream
-   ↓
-CSV Parser
-   ↓
-Transform Stream
-   ↓
-Validation
-   ↓
-Data Analysis
-   ↓
-Database / CSV Output
-```
-
-Only a small portion of the dataset is processed at a time.
-
----
-
-## 🖥️ Frontend
-
-The frontend is built using React.
-
-Important frontend features include:
-
-* CSV upload interface
-* Virtualized data preview
-* Column mapping
-* Transformation selection
-* Custom transformation editor
-* Live progress bar
-* Live processing statistics
-* Error/failed-row viewer
-* Data quality score
-* Deduplication settings
-* Job history dashboard
-
-### Virtualized Preview
-
-`react-window` is used for large datasets so that only the rows currently visible to the user need to be rendered in the DOM.
-
-This keeps the preview responsive even when the dataset contains a large number of records.
-
----
-
-## ⚙️ Backend
-
-The backend is built using Node.js and Express.
-
-Important backend functionality includes:
-
-* File upload and validation
-* Native Node.js streams
-* CSV parsing
-* Streaming transformations
-* Sandboxed JavaScript execution
-* Data validation
-* Job management
-* MongoDB integration
-* CSV generation
-* Data-quality analysis
-* Column statistics
-* Socket.IO progress updates
-
----
-
-## 🔌 Real-Time Communication
-
-Socket.IO is used to communicate processing progress from the backend to the frontend.
-
-Example progress information:
-
-```text
-Rows Processed: 1,250,000
-Rows/sec:       18,500
-Progress:       62%
-Status:         Processing
-```
-
-This allows users to monitor long-running ETL jobs without refreshing the page.
-
----
-
-## 🧪 Memory Testing
-
-StreamWeaver includes a memory testing script designed to demonstrate the application's streaming architecture.
-
-The memory test can generate and process a large CSV dataset while monitoring memory consumption.
-
-Run:
-
-```bash
-cd backend
-npm run memory-test
-```
-
-This helps verify that processing remains memory-efficient even when working with millions of rows.
-
----
-
-## 🛠️ Technology Stack
-
-### Frontend
-
-* React
-* React Window
-* CSS
-* Socket.IO Client
-
-### Backend
-
-* Node.js
-* Express
-* Busboy / streaming upload
-* Native Node.js Streams
-* Socket.IO
-* `isolated-vm`
-
-### Database
-
-* MongoDB
-* Mongoose
-
-### Development Tools
-
-* Git
-* GitHub
-* npm
-* Vite / Create React App tooling
-
----
-
-## 📁 Project Structure
-
-```text
-StreamWeaver/
-│
-├── backend/
-│   ├── server.js
-│   ├── db.js
-│   ├── package.json
-│   │
-│   ├── src/
-│   │   ├── routes/
-│   │   ├── services/
-│   │   ├── parsers/
-│   │   ├── utils/
-│   │   └── ...
-│   │
-│   ├── columnStats.js
-│   ├── csvWriter.js
-│   ├── qualityScore.js
-│   ├── sandboxRunner.js
-│   ├── applyMappingStream.js
-│   └── scripts/
-│       └── memoryTest.js
-│
-├── frontend/
-│   └── src/
-│       ├── App.js
-│       ├── App.css
-│       ├── socket.js
-│       │
-│       └── components/
-│           ├── UploadForm.js
-│           ├── DataGrid.js
-│           ├── ColumnMapper.js
-│           ├── ProgressBar.js
-│           ├── ErrorRows.js
-│           ├── DataQualityScore.js
-│           ├── DedupeSettings.js
-│           ├── JobHistoryDashboard.js
-│           └── LiveStats.js
-│
-└── README.md
-```
-
----
-
-## ▶️ How to Run
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/yashvi-gangani/streamWeaver.git
-cd StreamWeaver
-```
-
-### 2. Start the Backend
-
-```bash
 cd backend
 npm install
+```
+
+Create a `.env` file inside `backend/` with:
+
+```
+MONGO_URL=your_mongodb_connection_string
+GEMINI_API_KEY=your_gemini_api_key
+PORT=5000
+```
+
+- Get a MongoDB connection string from [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) (free tier) or run MongoDB locally.
+- Get a free Gemini API key from [Google AI Studio](https://aistudio.google.com) → "Get API Key".
+- If `MONGO_URL` is missing or unreachable, the app still works — it just skips saving to the database and shows a warning instead of crashing.
+- If `GEMINI_API_KEY` is missing, every AI feature will show an error when clicked, but the rest of the app is unaffected.
+
+Start the server:
+
+```
 npm start
 ```
 
-Backend runs on:
-
-```text
-http://localhost:5000
+You should see:
+```
+StreamWeaver backend listening on http://localhost:5000
+Connected to MongoDB
 ```
 
-### 3. Start the Frontend
+### 2. Frontend
 
-Open another terminal:
-
-```bash
+```
 cd frontend
 npm install
 npm start
 ```
 
-Frontend runs on:
+Opens at `http://localhost:3000`.
 
-```text
-http://localhost:3000
+### 3. Memory audit script (proves the streaming approach works)
+
+```
+cd backend
+npm run memory-test
+```
+
+Generates a 2-million-row test CSV and streams it through while logging RAM usage every second — memory should stay flat instead of spiking.
+
+---
+
+## Folder structure
+
+```
+streamweaver/
+├── backend/
+│   ├── server.js              → Express + Socket.IO server, main processing pipeline, all routes
+│   ├── db.js                  → MongoDB connection (processed_data + jobs collections)
+│   ├── csvToJsonStream.js     → custom transform stream (csv -> json), no library used
+│   ├── applyMappingStream.js  → applies column mapping (preset/custom transforms) to each row
+│   ├── sandboxRunner.js       → runs per-column custom JS safely via isolated-vm
+│   ├── rowRuleRunner.js       → runs AI-generated cross-column rules safely via isolated-vm
+│   ├── columnStats.js         → live min/max/avg/stdDev tracking per column
+│   ├── qualityScore.js        → deterministic data quality score calculation
+│   ├── anomalyDetector.js     → statistical outlier detection (3-sigma rule)
+│   ├── csvWriter.js           → writes row objects out as real CSV lines
+│   ├── geminiClient.js        → wraps calls to Google Gemini API
+│   ├── scripts/
+│   │   └── memoryTest.js      → memory audit script
+│   ├── uploads/                → temporary storage for uploaded files during processing
+│   └── failed_exports/         → downloadable CSVs of failed rows per job
+│
+└── frontend/
+    └── src/
+        ├── App.js
+        ├── App.css
+        └── components/
+            ├── UploadForm.js          → file picker + upload
+            ├── DataGrid.js            → virtualized live preview grid
+            ├── ColumnMapper.js        → column mapping UI + AI auto-mapping button
+            ├── AiAutoMapping.js       → AI column mapping suggestions
+            ├── DedupeSettings.js      → duplicate removal configuration
+            ├── NlRuleBuilder.js       → natural language rule builder (AI-assisted)
+            ├── ProgressBar.js         → live progress, results, wires in AI panels
+            ├── LiveStats.js           → live per-column statistics display
+            ├── DataQualityScore.js    → quality score circle + breakdown bars
+            ├── AiQualitySummary.js    → AI-written plain-English quality summary
+            ├── AiAnomalyPanel.js      → anomaly list + AI explanation
+            ├── ErrorRows.js           → failed rows display + CSV download
+            └── JobHistoryDashboard.js → past jobs table + resume/retry button
 ```
 
 ---
 
-## 🧪 Basic Workflow
+## How to test everything
 
-1. Start the backend.
-2. Start the frontend.
-3. Upload a CSV file.
-4. Preview the uploaded records.
-5. Configure column mappings.
-6. Select built-in transformations or write a custom JavaScript transformation.
-7. Configure deduplication options if required.
-8. Start full-file processing.
-9. Monitor live progress and processing statistics.
-10. Review data-quality information and failed rows.
-11. Store or export the processed dataset.
-12. Review the completed job in Job History.
+1. **Upload:** pick a CSV, click "Upload & Process" → see stats + live preview grid.
+2. **AI Auto Mapping:** click "✨ Suggest Mapping with AI" in the mapper → review suggestions → "Accept All".
+3. **Column Mapping:** rename a destination field or change a transform dropdown → preview updates live. Try "custom" for a JS rule.
+4. **Duplicate Removal:** enable it, pick a column (e.g. email).
+5. **Natural Language Rule Builder:** type something like "if age is below 18, mark as minor" → Generate Rule → review the code → Approve.
+6. **Process Full File:** click it → watch the live progress bar, rows/sec, live column statistics.
+7. **Results:** check Data Quality Score, AI Quality Summary ("✨ Explain This With AI"), Anomaly Panel, and the failed rows list with its CSV download button.
+8. **Job History Dashboard:** scroll to the bottom, confirm the run appears with correct stats. If a job ever gets stuck in "processing" status (e.g. after a server crash), click "▶ Resume" to continue it.
+9. **Memory audit:** run `npm run memory-test` in the backend to confirm RAM stays flat on a 2-million-row file.
 
 ---
 
-## 📌 Project Progress
+## Known limitations / things to be upfront about
 
-### Week 1 — Upload & Preview ✅
-
-* Large-file upload
-* Streaming upload to disk
-* File validation
-* Virtualized CSV preview
-* Job management foundation
-
-### Week 2 — Streaming Transformation ✅
-
-* Custom CSV streaming parser
-* JSON record conversion
-* Column mapping
-* Built-in transformations
-* Streaming transformation pipeline
-
-### Week 3 — Custom Processing & Live Progress ✅
-
-* Sandboxed JavaScript transformations
-* `isolated-vm`
-* Custom transformation UI
-* Socket.IO integration
-* Live processing progress
-* Rows/sec monitoring
-* Full-file streaming processing
-
-### Week 4 — Data Processing & Analytics ✅
-
-* MongoDB integration
-* Processed data handling
-* Failed-row/error handling
-* Data-quality scoring
-* Column statistics
-* Deduplication controls
-* Job history dashboard
-* Live processing statistics
-* CSV output generation
-* End-to-end ETL workflow
-
----
-
-## 🎯 Project Goal
-
-The goal of StreamWeaver is to demonstrate how a no-code ETL system can process large datasets efficiently while providing:
-
-* Low memory usage
-* Streaming-based processing
-* Flexible transformations
-* Safe custom user logic
-* Real-time progress monitoring
-* Data-quality visibility
-* Error tracking
-* Database integration
-* A user-friendly no-code interface
-
-StreamWeaver combines **stream processing, data transformation, validation, analytics, database operations, and real-time monitoring** into a single ETL workflow.
+- **Resume/Retry** depends on MongoDB being connected (checkpoints are stored there) and the original uploaded file still existing on disk. If either is missing, resume will show a clear error instead of failing silently.
+- **AI features** require a valid `GEMINI_API_KEY`. If the key is missing or invalid, each AI button shows an error message rather than breaking the app.
+- **Duplicate removal** uses a "keep first, drop the rest" strategy — "keep last" isn't supported since it would require buffering the whole file instead of streaming it.
+- Anomaly detection needs a reasonably large sample size to work well — on very small files (a handful of rows), an extreme outlier can skew the average enough to hide itself statistically.
